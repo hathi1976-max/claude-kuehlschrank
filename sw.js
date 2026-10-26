@@ -5,7 +5,7 @@
    steckt fest in der URL. Anfragen an api.anthropic.com laufen nie über den
    Cache (POST, wird ohnehin übergangen). */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'frischfach-' + VERSION;
 const VENDOR = 'frischfach-vendor';
 

@@ -1,4 +1,4 @@
-import { KATEGORIEN, kategorie, heute, plusTage, tageBis, stufe, restText, sortiere, ergaenzeJahr } from './haltbarkeit.js';
+import { KATEGORIEN, kategorie, heute, plusTage, tageBis, stufe, restText, sortiere, ergaenzeJahr, zerlegeSprache } from './haltbarkeit.js';
 import * as speicher from './speicher.js';
 
 const $ = id => document.getElementById(id);
@@ -170,18 +170,106 @@ $('dateiMhd').onchange = async ev => {
   } catch (err){ toast(`❌ ${err.message}`); }
 };
 
-function zeigeBon(daten){
+/* Prüfliste für Kassenbon und Gesagtes. `tage` zählt ab dem Datum oben
+   (Kaufdatum bzw. heute); beim Gesagten kann das auch 0 oder negativ sein
+   („Reste von vorgestern"). */
+function zeigeBon(daten, modus = 'bon'){
   const kauf = /^\d{4}-\d{2}-\d{2}$/.test(daten.kaufdatum) && tageBis(daten.kaufdatum) <= 0 && tageBis(daten.kaufdatum) > -30
     ? daten.kaufdatum : heute();
+  const bon = modus === 'bon';
+  $('bTitel').textContent = bon ? 'Vom Kassenbon' : 'Gesagt';
+  $('bDatumText').textContent = bon ? 'Gekauft am' : 'Eingeräumt am';
+  $('bHinweis').textContent = bon
+    ? 'Haken weg bei allem, was nicht in den Kühlschrank kommt. Datum bei Bedarf anpassen.'
+    : 'Namen und Daten kurz prüfen, dann übernehmen.';
   $('bKaufdatum').value = kauf;
   bonVorschlag = daten.artikel.map(x => ({
-    an: x.kuehlschrank,
+    an: x.kuehlschrank ?? true,
     name: x.name,
     kategorie: kategorie(x.kategorie).id,
-    tage: Math.max(1, x.haltbar_tage || kategorie(x.kategorie).tage),
+    tage: Number.isInteger(x.haltbar_tage) && (x.haltbar_tage > 0 || !bon) ? x.haltbar_tage : kategorie(x.kategorie).tage,
   }));
   zeichneBon();
   $('dlgBon').showModal();
+}
+
+/* ---------- Sprechen ----------
+
+   Die Spracherkennung des Browsers (Chrome/Android: über Google-Server,
+   Safari: Apple). Fehlt sie, bleibt das Textfeld – dort geht das Mikrofon der
+   Handy-Tastatur. */
+
+const Erkenner = window.SpeechRecognition || window.webkitSpeechRecognition;
+let erkenner = null;
+let textVorher = '';   // was vor dem aktuellen Zuhören schon im Feld stand
+
+function hoereZu(){
+  if (!Erkenner) return;
+  erkenner = new Erkenner();
+  erkenner.lang = 'de-DE';
+  erkenner.interimResults = true;
+  erkenner.continuous = true;
+  textVorher = $('sText').value.trim();
+  erkenner.onresult = ev => {
+    let gesagt = '';
+    for (const r of ev.results) gesagt += r[0].transcript;
+    $('sText').value = [textVorher, gesagt.trim()].filter(Boolean).join(', ');
+  };
+  erkenner.onerror = ev => {
+    $('sStatus').textContent = ev.error === 'not-allowed' ? 'Mikrofon nicht erlaubt – bitte tippen.'
+      : ev.error === 'no-speech' ? 'Nichts gehört.' : `Spracherkennung: ${ev.error}`;
+  };
+  erkenner.onend = () => {
+    erkenner = null;
+    $('sMikro').classList.remove('an');
+    if ($('sStatus').textContent.startsWith('🎙️')) $('sStatus').textContent = 'Tippe 🎤 für mehr.';
+  };
+  try {
+    erkenner.start();
+    $('sMikro').classList.add('an');
+    $('sStatus').textContent = '🎙️ Ich höre zu… (🎤 zum Beenden)';
+  } catch { erkenner = null; }
+}
+
+function hoerAuf(){
+  erkenner?.stop();
+}
+
+$('btnSprache').onclick = () => {
+  $('sText').value = '';
+  $('sStatus').textContent = Erkenner ? '' : 'Spracherkennung fehlt in diesem Browser – Tastatur-Mikrofon nutzen.';
+  $('sMikro').hidden = !Erkenner;
+  $('dlgSprache').showModal();
+  if (Erkenner) hoereZu();
+  else $('sText').focus();
+};
+$('sMikro').onclick = () => { if (erkenner) hoerAuf(); else hoereZu(); };
+$('sAbbrechen').onclick = () => { hoerAuf(); $('dlgSprache').close(); };
+$('dlgSprache').addEventListener('close', hoerAuf);
+
+$('formSprache').onsubmit = async ev => {
+  const text = $('sText').value.trim();
+  if (!text){ ev.preventDefault(); return; }
+  hoerAuf();
+  zeigeBon({ kaufdatum: heute(), artikel: await zerlegeGesagtes(text) }, 'sprache');
+};
+
+/* Mit Schlüssel versteht Claude auch „bis Freitag" oder „angebrochen";
+   ohne Schlüssel oder bei einem Fehler zerlegt die App selbst. */
+async function zerlegeGesagtes(text){
+  const lokal = () => zerlegeSprache(text).map(a => ({
+    name: a.name, kategorie: a.kategorie, haltbar_tage: kategorie(a.kategorie).tage - a.vorTagen,
+  }));
+  let e = null;
+  try { e = await erkennung(); } catch { return lokal(); }
+  if (!e.schluessel()) return lokal();
+  try {
+    const d = await mitLadeanzeige('Verstehe…', () => e.leseSprache(text, heute()));
+    return d.artikel.length ? d.artikel : lokal();
+  } catch (err){
+    toast(`${err.message} – einfach zerlegt.`);
+    return lokal();
+  }
 }
 
 function zeichneBon(){

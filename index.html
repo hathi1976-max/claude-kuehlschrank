@@ -22,8 +22,9 @@
 
   <nav class="aktionen">
     <button id="btnNeu" class="btn btn-primary">➕ Neu</button>
-    <button id="btnBon" class="btn">🧾 Kassenbon</button>
-    <button id="btnMhd" class="btn">📅 MHD-Foto</button>
+    <button id="btnSprache" class="btn">🎤 Sagen</button>
+    <button id="btnBon" class="btn">🧾 Bon</button>
+    <button id="btnMhd" class="btn">📅 MHD</button>
   </nav>
   <input id="dateiBon" type="file" accept="image/*" capture="environment" hidden />
   <input id="dateiMhd" type="file" accept="image/*" capture="environment" hidden />
@@ -61,14 +62,31 @@
     </form>
   </dialog>
 
-  <!-- Kassenbon prüfen -->
+  <!-- Sprechen -->
+  <dialog id="dlgSprache">
+    <form method="dialog" id="formSprache">
+      <h2>Was kommt rein?</h2>
+      <p class="hint">Einfach aufzählen, z. B. „Milch, zwei Joghurt und Reste vom Gulasch von gestern".</p>
+      <div class="sprech-zeile">
+        <button type="button" id="sMikro" class="mikro" aria-label="Zuhören">🎤</button>
+        <span id="sStatus" class="hint"></span>
+      </div>
+      <textarea id="sText" rows="4" placeholder="Hier erscheint, was du sagst – oder tippen bzw. Tastatur-Mikrofon nutzen."></textarea>
+      <div class="dlg-knoepfe">
+        <button type="button" id="sAbbrechen" class="btn">Abbrechen</button>
+        <button type="submit" id="sWeiter" class="btn btn-primary">Weiter</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Kassenbon bzw. Gesagtes prüfen -->
   <dialog id="dlgBon">
     <form method="dialog" id="formBon">
-      <h2>Vom Kassenbon</h2>
-      <label>Gekauft am
+      <h2 id="bTitel">Vom Kassenbon</h2>
+      <label><span id="bDatumText">Gekauft am</span>
         <input id="bKaufdatum" type="date" required />
       </label>
-      <p class="hint">Haken weg bei allem, was nicht in den Kühlschrank kommt. Datum bei Bedarf anpassen.</p>
+      <p class="hint" id="bHinweis">Haken weg bei allem, was nicht in den Kühlschrank kommt. Datum bei Bedarf anpassen.</p>
       <ul id="bListe" class="bon-liste"></ul>
       <div class="dlg-knoepfe">
         <button type="button" id="bAbbrechen" class="btn">Abbrechen</button>
@@ -102,7 +120,7 @@
         <button type="button" id="eEinlesen" class="btn">Einlesen</button>
         <input id="eDatei" type="file" accept="application/json,.json" hidden />
       </div>
-      <p class="ver">Version <span id="version">v1</span></p>
+      <p class="ver">Version <span id="version">v2</span></p>
       <div class="dlg-knoepfe">
         <button type="submit" class="btn btn-primary">Fertig</button>
       </div>

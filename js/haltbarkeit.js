@@ -72,6 +72,58 @@ export function sortiere(artikel){
     a.ablauf < b.ablauf ? -1 : a.ablauf > b.ablauf ? 1 : a.name.localeCompare(b.name, 'de'));
 }
 
+/* ---------- Gesprochenes ohne Claude zerlegen ----------
+
+   Rückfall, wenn kein API-Schlüssel da ist: nach Komma/„und" trennen, die Art
+   über Stichwörter raten. Reihenfolge zählt – „Hackfleisch" muss vor „fleisch"
+   greifen, „Reste vom Gulasch" vor allem anderen. */
+
+const STICHWORTE = [
+  ['reste',    ['rest', 'gulasch', 'suppe', 'eintopf', 'soße', 'sosse', 'gekocht', 'auflauf', 'lasagne', 'pizza']],
+  ['hack',     ['hack']],
+  ['wurst',    ['wurst', 'schinken', 'salami', 'aufschnitt', 'speck', 'würstchen', 'leberkäse']],
+  ['fleisch',  ['fleisch', 'hähnchen', 'huhn', 'pute', 'steak', 'schnitzel', 'fisch', 'lachs', 'forelle', 'garnelen', 'filet']],
+  ['joghurt',  ['joghurt', 'quark', 'skyr', 'pudding', 'sahne', 'schmand', 'crème fraîche', 'creme fraiche']],
+  ['kaese',    ['käse', 'gouda', 'feta', 'mozzarella', 'camembert', 'brie', 'parmesan', 'emmentaler', 'frischkäse']],
+  ['milch',    ['milch', 'buttermilch', 'kefir']],
+  ['salat',    ['salat', 'kräuter', 'rucola', 'spinat', 'petersilie', 'schnittlauch', 'basilikum']],
+  ['obst',     ['apfel', 'äpfel', 'birne', 'banane', 'beere', 'traube', 'kiwi', 'pfirsich', 'melone', 'obst', 'zitrone']],
+  ['gemuese',  ['gemüse', 'paprika', 'gurke', 'tomate', 'möhre', 'karotte', 'zucchini', 'brokkoli', 'pilz', 'champignon', 'lauch', 'kohl', 'spargel', 'aubergine']],
+  ['getraenk', ['saft', 'smoothie', 'limo', 'getränk']],
+];
+
+export function rateKategorie(name){
+  const n = name.toLowerCase();
+  if (/(^|\s)eier?(\s|$)/.test(n)) return 'eier';
+  for (const [id, woerter] of STICHWORTE) if (woerter.some(w => n.includes(w))) return id;
+  return 'sonstiges';
+}
+
+const ZAHLWORTE = { zwei: 2, drei: 3, vier: 4, fünf: 5, sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10 };
+
+/* „Milch, zwei Joghurt und Reste vom Gulasch von gestern" →
+   [{name:'Milch'}, {name:'Joghurt (2)'}, {name:'Reste vom Gulasch', vorTagen:1}] */
+export function zerlegeSprache(text){
+  return text
+    .split(/,|;|\n|\s+und\s+|\s+sowie\s+/i)
+    .map(teil => {
+      let t = teil.trim().replace(/[.!?]+$/, '');
+      let vorTagen = 0;
+      const alt = t.match(/\s*(?:von|seit)\s+(vorgestern|gestern)$/i);
+      if (alt){ vorTagen = alt[1].toLowerCase() === 'vorgestern' ? 2 : 1; t = t.slice(0, alt.index); }
+      t = t.replace(/^(?:noch\s+)?(?:ein|eine|einen|einmal|der|die|das|den)\s+/i, '');
+      let menge = 0;
+      const zahl = t.match(/^(\d+)\s*(?:x\s+)?|^(zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn)\s+/i);
+      if (zahl){ menge = zahl[1] ? Number(zahl[1]) : ZAHLWORTE[zahl[2].toLowerCase()]; t = t.slice(zahl[0].length); }
+      t = t.trim();
+      if (!t) return null;
+      t = t[0].toUpperCase() + t.slice(1);
+      const name = menge > 1 ? `${t} (${menge})` : t;
+      return { name, kategorie: rateKategorie(t), vorTagen };
+    })
+    .filter(Boolean);
+}
+
 /* Erkannte Datumsangaben sind oft unvollständig („12.11." ohne Jahr). Liegt
    das Datum dann mehr als zwei Monate zurück, ist das nächste Jahr gemeint. */
 export function ergaenzeJahr(tag, monat, bezug = heute()){

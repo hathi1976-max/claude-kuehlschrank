@@ -1,4 +1,5 @@
-/* Fotoerkennung über Claude: Kassenbon → Artikelliste, Packung → MHD.
+/* Erkennung über Claude: Kassenbon → Artikelliste, Packung → MHD,
+   diktierter Satz → Artikelliste.
 
    Der API-Schlüssel liegt nur im localStorage dieses Geräts und geht direkt an
    api.anthropic.com – kein eigener Server dazwischen. Das ist für eine App mit
@@ -71,6 +72,38 @@ const MHD_SCHEMA = {
   },
 };
 
+const SPRACH_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['artikel'],
+  properties: {
+    artikel: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'kategorie', 'haltbar_tage'],
+        properties: {
+          name: { type: 'string', description: 'Kurzer Name, Menge in Klammern wenn genannt, z. B. "Joghurt (2)"' },
+          kategorie: { type: 'string', enum: KATEGORIEN.map(k => k.id) },
+          haltbar_tage: { type: 'integer', description: 'Tage ab HEUTE bis zum Ablauf; 0 = heute, negativ = schon drüber' },
+        },
+      },
+    },
+  },
+};
+
+/* Nur Text, kein Bild – kostet daher nur einen Bruchteil eines Kassenbons. */
+export async function leseSprache(text, heuteIso){
+  return frage(null,
+    `Heute ist ${heuteIso}. Der Nutzer hat diktiert, was er in den Kühlschrank legt:\n\n"${text}"\n\n` +
+    'Zerlege das in einzelne Lebensmittel. Korrigiere offensichtliche Fehler der Spracherkennung. ' +
+    'Schätze für jedes die übliche Haltbarkeit im Kühlschrank und gib sie als Tage ab heute an. ' +
+    'Berücksichtige Angaben wie "von gestern", "offen", "angebrochen" oder ein genanntes Datum ' +
+    '("bis Freitag", "MHD 3. November"). Füllwörter und Dinge, die kein Lebensmittel sind, weglassen.',
+    SPRACH_SCHEMA);
+}
+
 async function frage(base64, anweisung, schema){
   const apiKey = schluessel();
   if (!apiKey) throw new Error('Kein API-Schlüssel hinterlegt (Einstellungen).');
@@ -87,7 +120,7 @@ async function frage(base64, anweisung, schema){
       messages: [{
         role: 'user',
         content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+          ...(base64 ? [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } }] : []),
           { type: 'text', text: anweisung },
         ],
       }],
@@ -100,7 +133,7 @@ async function frage(base64, anweisung, schema){
     throw e;
   }
 
-  if (antwort.stop_reason === 'refusal') throw new Error('Claude hat das Bild nicht ausgewertet.');
+  if (antwort.stop_reason === 'refusal') throw new Error('Claude hat die Anfrage nicht ausgewertet.');
   if (antwort.stop_reason === 'max_tokens') throw new Error('Antwort abgeschnitten – Bon in zwei Fotos teilen.');
   const text = antwort.content.find(b => b.type === 'text')?.text;
   if (!text) throw new Error('Leere Antwort.');

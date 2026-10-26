@@ -7,7 +7,7 @@
 <h1 id="kopf">Tests laufen…</h1>
 <ul id="aus"></ul>
 <script type="module">
-import { plusTage, tageBis, stufe, restText, sortiere, ergaenzeJahr, isoDatum } from '../js/haltbarkeit.js';
+import { plusTage, tageBis, stufe, restText, sortiere, ergaenzeJahr, isoDatum, rateKategorie, zerlegeSprache } from '../js/haltbarkeit.js';
 
 const ergebnisse = [];
 function gleich(name, ist, soll){
@@ -43,6 +43,18 @@ gleich('sortiere', sortiere([
 gleich('ergaenzeJahr gleiches Jahr', ergaenzeJahr(12, 11, '2026-10-26'), '2026-11-12');
 gleich('ergaenzeJahr knapp vorbei bleibt', ergaenzeJahr(20, 10, '2026-10-26'), '2026-10-20');
 gleich('ergaenzeJahr nächstes Jahr', ergaenzeJahr(5, 1, '2026-12-20'), '2027-01-05');
+
+gleich('rateKategorie', ['Hackfleisch', 'Hähnchenbrust', 'Eier', 'Feta', 'Reste vom Gulasch', 'Frischkäse', 'Weißwein', 'Paprika'].map(rateKategorie),
+  ['hack', 'fleisch', 'eier', 'kaese', 'reste', 'kaese', 'sonstiges', 'gemuese']);
+
+gleich('zerlegeSprache Satz', zerlegeSprache('Milch, zwei Joghurt und Reste vom Gulasch von gestern.'), [
+  { name: 'Milch', kategorie: 'milch', vorTagen: 0 },
+  { name: 'Joghurt (2)', kategorie: 'joghurt', vorTagen: 0 },
+  { name: 'Reste vom Gulasch', kategorie: 'reste', vorTagen: 1 },
+]);
+gleich('zerlegeSprache Artikel und Ziffern', zerlegeSprache('eine Gurke; 3 x Eier sowie den Schinken von vorgestern').map(a => [a.name, a.kategorie, a.vorTagen]),
+  [['Gurke', 'gemuese', 0], ['Eier (3)', 'eier', 0], ['Schinken', 'wurst', 2]]);
+gleich('zerlegeSprache leer', zerlegeSprache(' , und '), []);
 
 const aus = document.getElementById('aus');
 for (const e of ergebnisse){

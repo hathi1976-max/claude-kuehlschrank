@@ -8,6 +8,10 @@ PWA, die zeigt, was im Kühlschrank bald abläuft – damit nichts mehr hinten v
   (`js/haltbarkeit.js`), Schnellknöpfe +1 T / +3 T / +1 W / +2 W.
 - **🧾 Kassenbon-Foto**: Claude liest alle Posten, löst Bon-Abkürzungen auf, schätzt die Haltbarkeit
   und hakt aus, was nicht in den Kühlschrank gehört. Vor dem Übernehmen alles prüfbar.
+- **🎤 Sagen**: aufzählen („Milch, zwei Joghurt und Reste vom Gulasch von gestern") → dieselbe
+  Prüfliste wie beim Bon. Spracherkennung des Browsers (Chrome/Android gut, iPhone-PWA wackelig;
+  sonst Textfeld + Tastatur-Mikrofon). Mit Schlüssel zerlegt Claude den Satz (versteht auch
+  „bis Freitag", „angebrochen"), ohne Schlüssel die App selbst über Stichwörter.
 - **📅 MHD-Foto**: Claude liest das Datum von der Packung; fehlt das Jahr, wird es ergänzt.
 - **✅ verbraucht / 🗑️ weggeworfen** mit Rückgängig; Bilanz in den Einstellungen.
 - **Sicherung** als JSON (Einlesen ergänzt, überschreibt nicht).
