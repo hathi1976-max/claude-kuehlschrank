@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8" /><title>Frischfach – Tests</title>
+<style>body{font:14px monospace;background:#0d1117;color:#e6edf3;padding:16px}.ok{color:#3fb950}.fehler{color:#f85149}</style>
+</head>
+<body>
+<h1 id="kopf">Tests laufen…</h1>
+<ul id="aus"></ul>
+<script type="module">
+import { plusTage, tageBis, stufe, restText, sortiere, ergaenzeJahr, isoDatum } from '../js/haltbarkeit.js';
+
+const ergebnisse = [];
+function gleich(name, ist, soll){
+  const ok = JSON.stringify(ist) === JSON.stringify(soll);
+  ergebnisse.push({ name, ok, ist, soll });
+}
+
+// Monats- und Jahreswechsel
+gleich('plusTage Monatsende', plusTage('2026-01-30', 3), '2026-02-02');
+gleich('plusTage Jahreswechsel', plusTage('2026-12-30', 5), '2027-01-04');
+gleich('plusTage Schaltjahr', plusTage('2028-02-28', 1), '2028-02-29');
+// Zeitumstellung (25.10.2026 / 29.03.2026) darf keinen halben Tag erzeugen
+gleich('tageBis über Zeitumstellung Herbst', tageBis('2026-10-27', '2026-10-24'), 3);
+gleich('tageBis über Zeitumstellung Frühjahr', tageBis('2026-03-30', '2026-03-28'), 2);
+gleich('tageBis rückwärts', tageBis('2026-10-20', '2026-10-26'), -6);
+// Ortsdatum statt UTC: 23:30 Uhr bleibt derselbe Tag
+gleich('isoDatum spätabends', isoDatum(new Date(2026, 9, 26, 23, 30)), '2026-10-26');
+
+gleich('stufe abgelaufen', stufe(-2), 'rot');
+gleich('stufe morgen', stufe(1), 'rot');
+gleich('stufe 3 Tage', stufe(3), 'gelb');
+gleich('stufe 4 Tage', stufe(4), 'gruen');
+
+gleich('restText', [-3, -1, 0, 1, 5].map(restText),
+  ['seit 3 Tagen abgelaufen', 'seit gestern abgelaufen', 'heute', 'morgen', 'in 5 Tagen']);
+
+gleich('sortiere', sortiere([
+  { name: 'Käse', ablauf: '2026-11-10' },
+  { name: 'Milch', ablauf: '2026-10-28' },
+  { name: 'Äpfel', ablauf: '2026-10-28' },
+]).map(a => a.name), ['Äpfel', 'Milch', 'Käse']);
+
+gleich('ergaenzeJahr gleiches Jahr', ergaenzeJahr(12, 11, '2026-10-26'), '2026-11-12');
+gleich('ergaenzeJahr knapp vorbei bleibt', ergaenzeJahr(20, 10, '2026-10-26'), '2026-10-20');
+gleich('ergaenzeJahr nächstes Jahr', ergaenzeJahr(5, 1, '2026-12-20'), '2027-01-05');
+
+const aus = document.getElementById('aus');
+for (const e of ergebnisse){
+  const li = document.createElement('li');
+  li.className = e.ok ? 'ok' : 'fehler';
+  li.textContent = (e.ok ? '✓ ' : '✗ ') + e.name + (e.ok ? '' : ` – ist ${JSON.stringify(e.ist)}, soll ${JSON.stringify(e.soll)}`);
+  aus.append(li);
+}
+const fehl = ergebnisse.filter(e => !e.ok).length;
+document.getElementById('kopf').textContent = fehl ? `${fehl} von ${ergebnisse.length} fehlgeschlagen` : `Alle ${ergebnisse.length} Tests bestanden`;
+window.testErgebnis = { gesamt: ergebnisse.length, fehl };
+</script>
+</body>
+</html>

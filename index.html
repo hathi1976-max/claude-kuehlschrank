@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1117" />
+  <title>Frischfach – Kühlschrank im Blick</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand">🧊 Frischfach</div>
+    <button id="btnEinstellungen" class="icon-btn" aria-label="Einstellungen">⚙️</button>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <nav class="aktionen">
+    <button id="btnNeu" class="btn btn-primary">➕ Neu</button>
+    <button id="btnBon" class="btn">🧾 Kassenbon</button>
+    <button id="btnMhd" class="btn">📅 MHD-Foto</button>
+  </nav>
+  <input id="dateiBon" type="file" accept="image/*" capture="environment" hidden />
+  <input id="dateiMhd" type="file" accept="image/*" capture="environment" hidden />
+
+  <main>
+    <p id="leer" class="hint" hidden>Noch nichts eingetragen. Tippe auf „Neu" oder fotografiere einen Kassenbon.</p>
+    <ul id="liste" class="liste"></ul>
+  </main>
+
+  <!-- Eintragen / Bearbeiten -->
+  <dialog id="dlgArtikel">
+    <form method="dialog" id="formArtikel">
+      <h2 id="dlgArtikelTitel">Eintragen</h2>
+      <label>Was?
+        <input id="fName" required autocomplete="off" placeholder="z. B. Joghurt" />
+      </label>
+      <label>Art
+        <select id="fKategorie"></select>
+      </label>
+      <label>Haltbar bis
+        <input id="fAblauf" type="date" required />
+      </label>
+      <div class="schnell">
+        <button type="button" data-tage="1">+1 T</button>
+        <button type="button" data-tage="3">+3 T</button>
+        <button type="button" data-tage="7">+1 W</button>
+        <button type="button" data-tage="14">+2 W</button>
+      </div>
+      <p id="fHinweis" class="hint"></p>
+      <div class="dlg-knoepfe">
+        <button type="button" id="fLoeschen" class="btn btn-gefahr" hidden>Entfernen</button>
+        <button type="button" id="fAbbrechen" class="btn">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Kassenbon prüfen -->
+  <dialog id="dlgBon">
+    <form method="dialog" id="formBon">
+      <h2>Vom Kassenbon</h2>
+      <label>Gekauft am
+        <input id="bKaufdatum" type="date" required />
+      </label>
+      <p class="hint">Haken weg bei allem, was nicht in den Kühlschrank kommt. Datum bei Bedarf anpassen.</p>
+      <ul id="bListe" class="bon-liste"></ul>
+      <div class="dlg-knoepfe">
+        <button type="button" id="bAbbrechen" class="btn">Abbrechen</button>
+        <button type="submit" class="btn btn-primary" id="bUebernehmen">Übernehmen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Einstellungen -->
+  <dialog id="dlgEinst">
+    <form method="dialog">
+      <h2>Einstellungen</h2>
+      <h3>Fotoerkennung</h3>
+      <p class="hint">Für Kassenbon und MHD-Foto braucht die App einen eigenen Claude-API-Schlüssel
+        (console.anthropic.com). Er bleibt nur auf diesem Gerät gespeichert.</p>
+      <label>API-Schlüssel
+        <input id="eSchluessel" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" />
+      </label>
+      <div class="dlg-knoepfe links">
+        <button type="button" id="eSchluesselSpeichern" class="btn">Schlüssel speichern</button>
+        <button type="button" id="eSchluesselLoeschen" class="btn btn-gefahr">Entfernen</button>
+      </div>
+      <p id="eSchluesselStatus" class="hint"></p>
+
+      <h3>Bilanz</h3>
+      <div id="eBilanz" class="bilanz"></div>
+
+      <h3>Sicherung</h3>
+      <div class="dlg-knoepfe links">
+        <button type="button" id="eSichern" class="btn">Sichern (JSON)</button>
+        <button type="button" id="eEinlesen" class="btn">Einlesen</button>
+        <input id="eDatei" type="file" accept="application/json,.json" hidden />
+      </div>
+      <p class="ver">Version <span id="version">v1</span></p>
+      <div class="dlg-knoepfe">
+        <button type="submit" class="btn btn-primary">Fertig</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="laden" class="laden" hidden><div class="kreisel"></div><p id="ladenText">Lese Foto…</p></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

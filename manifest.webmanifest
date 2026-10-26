@@ -1,0 +1,14 @@
+{
+  "name": "Frischfach – Kühlschrank im Blick",
+  "short_name": "Frischfach",
+  "description": "Zeigt, was im Kühlschrank bald abläuft. Eintragen per Hand, Kassenbon-Foto oder MHD-Foto.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
